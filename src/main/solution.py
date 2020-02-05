@@ -24,7 +24,6 @@ def load_mnist():
     return train_data, val_data, test_data
 
 # train_data_, val_data_, test_data_ = load_mnist()
-# print(train_data_[0].shape)
 
 def weight_initialization(init, m, n):
     if init == 'zero':
@@ -47,7 +46,7 @@ class NN(object):
                  lr=7e-4,
                  batch_size=64,
                  seed=None,
-                 activation="glorot",
+                 activation="relu",
                  data=None
                  ):
 
@@ -55,7 +54,7 @@ class NN(object):
         self.n_hidden = len(hidden_dims)
         self.lr = lr
         self.batch_size = batch_size
-        self.init_method = 'blah'
+        self.init_method = 'zero'
         self.seed = seed
         self.activation_str = activation
         self.epsilon = epsilon
@@ -75,7 +74,6 @@ class NN(object):
     def initialize_weights(self, dims):        
         if self.seed is not None:
             np.random.seed(self.seed)
-
         self.weights = {}
         # self.weights is a dictionnary with keys W1, b1, W2, b2, ..., Wm, Bm where m - 1 is the number of hidden layers
         all_dims = [dims[0]] + list(self.hidden_dims) + [dims[1]]
@@ -200,5 +198,3 @@ class NN(object):
         test_loss, test_accuracy, _ = self.compute_loss_and_accuracy(X_test, y_test)
         return test_loss, test_accuracy
 
-mlp = NN()
-mlp.train_loop(1)

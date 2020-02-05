@@ -24,6 +24,21 @@ def load_mnist():
     return train_data, val_data, test_data
 
 # train_data_, val_data_, test_data_ = load_mnist()
+# print(train_data_[0].shape)
+
+def weight_initialization(init, m, n):
+    if init == 'zero':
+        w = np.zeros((m, n))
+    elif init == 'normal':
+        w = np.random.normal(0, 1, (m,n))
+    elif init == 'glorot':
+        d = np.sqrt(6/(m+n))
+        w = np.random.uniform(-d, d)
+    else:
+        print('Unknown initialization method. Falling back to Zero Init method.')
+        w = np.zeros((m, n))
+    return w
+
 
 class NN(object):
     def __init__(self,
@@ -32,7 +47,7 @@ class NN(object):
                  lr=7e-4,
                  batch_size=64,
                  seed=None,
-                 activation="relu",
+                 activation="glorot",
                  data=None
                  ):
 
@@ -40,7 +55,7 @@ class NN(object):
         self.n_hidden = len(hidden_dims)
         self.lr = lr
         self.batch_size = batch_size
-        self.init_method = init_method
+        self.init_method = 'blah'
         self.seed = seed
         self.activation_str = activation
         self.epsilon = epsilon
@@ -57,7 +72,6 @@ class NN(object):
         else:
             self.train, self.valid, self.test = data
 
-
     def initialize_weights(self, dims):        
         if self.seed is not None:
             np.random.seed(self.seed)
@@ -66,7 +80,7 @@ class NN(object):
         # self.weights is a dictionnary with keys W1, b1, W2, b2, ..., Wm, Bm where m - 1 is the number of hidden layers
         all_dims = [dims[0]] + list(self.hidden_dims) + [dims[1]]
         for layer_n in range(1, self.n_hidden + 2):
-            # WRITE CODE HERE
+            self.weights[f"W{layer_n}"] = weight_initialization(self.init_method, all_dims[layer_n], all_dims[layer_n-1])
             self.weights[f"b{layer_n}"] = np.zeros((1, all_dims[layer_n]))
 
     def relu(self, x, grad=False):
@@ -185,3 +199,6 @@ class NN(object):
         X_test, y_test = self.test
         test_loss, test_accuracy, _ = self.compute_loss_and_accuracy(X_test, y_test)
         return test_loss, test_accuracy
+
+mlp = NN()
+mlp.train_loop(1)

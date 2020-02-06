@@ -25,6 +25,7 @@ def load_mnist():
 
 # train_data_, val_data_, test_data_ = load_mnist()
 
+
 def weight_initialization(init, m, n):
     if init == 'zero':
         w = np.zeros((m, n))
@@ -32,10 +33,11 @@ def weight_initialization(init, m, n):
         w = np.random.normal(0, 1, (m,n))
     elif init == 'glorot':
         d = np.sqrt(6/(m+n))
-        w = np.random.uniform(-d, d)
+        w = np.random.uniform(-d, d, (m,n))
     else:
-        print('Unknown initialization method. Falling back to Zero Init method.')
-        w = np.zeros((m, n))
+        print('Unknown initialization method. Falling back to glorot init method.')
+        d = np.sqrt(6/(m+n))
+        w = np.random.uniform(-d, d, (m,n))
     return w
 
 
@@ -54,7 +56,7 @@ class NN(object):
         self.n_hidden = len(hidden_dims)
         self.lr = lr
         self.batch_size = batch_size
-        self.init_method = 'zero'
+        self.init_method = 'glorot'
         self.seed = seed
         self.activation_str = activation
         self.epsilon = epsilon
@@ -78,59 +80,51 @@ class NN(object):
         # self.weights is a dictionnary with keys W1, b1, W2, b2, ..., Wm, Bm where m - 1 is the number of hidden layers
         all_dims = [dims[0]] + list(self.hidden_dims) + [dims[1]]
         for layer_n in range(1, self.n_hidden + 2):
-            self.weights[f"W{layer_n}"] = weight_initialization(self.init_method, all_dims[layer_n], all_dims[layer_n-1])
+            self.weights[f"W{layer_n}"] = weight_initialization(self.init_method, all_dims[layer_n-1], all_dims[layer_n])
             self.weights[f"b{layer_n}"] = np.zeros((1, all_dims[layer_n]))
 
     def relu(self, x, grad=False):
         if grad:
-            # WRITE CODE HERE
-            pass
-        # WRITE CODE HERE
-        pass
-        return 0
+            x = np.heaviside(x, 1/2)
+        else:
+            x = np.maximum(0, x)
+        return x
 
     def sigmoid(self, x, grad=False):
+        sig = 1/(1+np.exp(-x))
         if grad:
-            # WRITE CODE HERE
-            pass
-        # WRITE CODE HERE
-        pass
-        return 0
+            x = sig*(1-sig)
+        else:
+            x = sig
+        return x
 
     def tanh(self, x, grad=False):
+        tan = np.tanh(x)
         if grad:
-            # WRITE CODE HERE
-            pass
-        # WRITE CODE HERE
-        pass
-        return 0
+            x = 1 - tan**2
+        else:
+            x = tan
+        return x
 
     def activation(self, x, grad=False):
         if self.activation_str == "relu":
-            # WRITE CODE HERE
-            pass
+            a = self.relu(x, grad)
         elif self.activation_str == "sigmoid":
-            # WRITE CODE HERE
-            pass
+            a = self.sigmoid(x, grad)
         elif self.activation_str == "tanh":
-            # WRITE CODE HERE
-            pass
+            a = self.tanh(x, grad)
         else:
             raise Exception("invalid")
-        return 0
+        return a
 
     def softmax(self, x):
-        # Remember that softmax(x-C) = softmax(x) when C is a constant.
-        # WRITE CODE HERE
-        pass
-        return 0
+        return np.exp(x-np.amax(x))/np.sum(np.exp(x - np.amax(x)))
 
     def forward(self, x):
         cache = {"Z0": x}
         # cache is a dictionnary with keys Z0, A0, ..., Zm, Am where m - 1 is the number of hidden layers
         # Ai corresponds to the preactivation at layer i, Zi corresponds to the activation at layer i
         # WRITE CODE HERE
-        pass
         return cache
 
     def backward(self, cache, labels):
@@ -197,4 +191,3 @@ class NN(object):
         X_test, y_test = self.test
         test_loss, test_accuracy, _ = self.compute_loss_and_accuracy(X_test, y_test)
         return test_loss, test_accuracy
-

@@ -118,13 +118,21 @@ class NN(object):
         return a
 
     def softmax(self, x):
-        return np.exp(x-np.amax(x))/np.sum(np.exp(x - np.amax(x)))
+        if x.ndim == 2:
+            exponent = np.exp(x-np.max(x, axis=1)[:, np.newaxis])
+            soft_max = exponent / exponent.sum(axis=1)[:, np.newaxis]
+        else:
+            exponent = np.exp(x - np.max(x))
+            soft_max = exponent / exponent.sum()
+        return soft_max
 
     def forward(self, x):
         cache = {"Z0": x}
         # cache is a dictionnary with keys Z0, A0, ..., Zm, Am where m - 1 is the number of hidden layers
         # Ai corresponds to the preactivation at layer i, Zi corresponds to the activation at layer i
-        # WRITE CODE HERE
+        for layer in range(1, self.n_hidden + 2):
+            cache[f"A{layer}"] = np.dot(cache[f"Z{layer-1}"], self.weights[f"W{layer}"]) + self.weights[f"b{layer}"]
+            cache[f"Z{layer}"] = self.softmax(cache[f"A{layer}"]) if layer == (self.n_hidden + 1) else self.activation(cache[f"A{layer}"])
         return cache
 
     def backward(self, cache, labels):

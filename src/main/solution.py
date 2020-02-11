@@ -139,8 +139,14 @@ class NN(object):
         output = cache[f"Z{self.n_hidden + 1}"]
         grads = {}
         # grads is a dictionnary with keys dAm, dWm, dbm, dZ(m-1), dA(m-1), ..., dW1, db1
-        # WRITE CODE HERE
-        pass
+        grads[f"dA{self.n_hidden+1}"] = output - labels
+        grads[f"dW{self.n_hidden+1}"] = np.dot(np.array(cache[f"Z{self.n_hidden}"].T), grads[f"dA{self.n_hidden+1}"])/self.batch_size
+        grads[f"db{self.n_hidden+1}"] = np.sum(grads[f"dA{self.n_hidden+1}"], axis=0, keepdims=True)/self.batch_size
+        for layer_n in range(self.n_hidden, 0, -1):
+            grads[f"dZ{layer_n}"] = np.dot(grads[f"dA{layer_n+1}"], np.array(self.weights[f"W{layer_n+1}"].T))
+            grads[f"dA{layer_n}"] = np.multiply(self.activation(cache[f"A{layer_n}"], True), grads[f"dZ{layer_n}"])
+            grads[f"dW{layer_n}"] = np.dot(grads[f"dA{layer_n}"].T, np.array(cache[f"Z{layer_n-1}"]))/self.batch_size
+            grads[f"db{layer_n}"] = np.sum(grads[f"dA{layer_n}"], axis=0, keepdims=True)/self.batch_size
         return grads
 
     def update(self, grads):

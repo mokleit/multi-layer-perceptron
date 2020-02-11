@@ -145,14 +145,14 @@ class NN(object):
         for layer_n in range(self.n_hidden, 0, -1):
             grads[f"dZ{layer_n}"] = np.dot(grads[f"dA{layer_n+1}"], np.array(self.weights[f"W{layer_n+1}"].T))
             grads[f"dA{layer_n}"] = np.multiply(self.activation(cache[f"A{layer_n}"], True), grads[f"dZ{layer_n}"])
-            grads[f"dW{layer_n}"] = np.dot(grads[f"dA{layer_n}"].T, np.array(cache[f"Z{layer_n-1}"]))/self.batch_size
+            grads[f"dW{layer_n}"] = np.dot(np.array(cache[f"Z{layer_n-1}"].T), grads[f"dA{layer_n}"])/self.batch_size
             grads[f"db{layer_n}"] = np.sum(grads[f"dA{layer_n}"], axis=0, keepdims=True)/self.batch_size
         return grads
 
     def update(self, grads):
         for layer in range(1, self.n_hidden + 2):
-            # WRITE CODE HERE
-            pass
+            self.weights[f"W{layer}"] -= self.lr*grads[f"dW{layer}"]
+            self.weights[f"b{layer}"] -= self.lr*grads[f"db{layer}"]
 
     # def one_hot(self, y, n_classes=None):
     #     n_classes = n_classes or self.n_classes
@@ -161,9 +161,8 @@ class NN(object):
     def loss(self, prediction, labels):
         prediction[np.where(prediction < self.epsilon)] = self.epsilon
         prediction[np.where(prediction > 1 - self.epsilon)] = 1 - self.epsilon
-        # WRITE CODE HERE
-        pass
-        return 0
+        cost = -np.sum(labels*np.log(prediction))/prediction.shape[0]
+        return cost
 
     def compute_loss_and_accuracy(self, X, y):
         one_y = y
@@ -186,8 +185,9 @@ class NN(object):
             for batch in range(n_batches):
                 minibatchX = X_train[self.batch_size * batch:self.batch_size * (batch + 1), :]
                 minibatchY = y_onehot[self.batch_size * batch:self.batch_size * (batch + 1), :]
-                # WRITE CODE HERE
-                pass
+                cache = self.forward(minibatchX)
+                grads = self.backward(cache, minibatchY)
+                self.update(grads)
 
             X_train, y_train = self.train
             train_loss, train_accuracy, _ = self.compute_loss_and_accuracy(X_train, y_train)

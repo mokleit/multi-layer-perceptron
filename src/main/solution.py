@@ -1,6 +1,10 @@
 import pickle
 import numpy as np
 import gzip
+import time
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from sklearn.model_selection import ParameterGrid
 
 def one_hot(y, n_classes=10):
     return np.eye(n_classes)[y]
@@ -24,7 +28,6 @@ def load_mnist():
     return train_data, val_data, test_data
 
 # train_data_, val_data_, test_data_ = load_mnist()
-
 
 def weight_initialization(init, m, n):
     if init == 'zero':
@@ -60,8 +63,10 @@ class NN(object):
         self.seed = seed
         self.activation_str = activation
         self.epsilon = epsilon
-
         self.train_logs = {'train_accuracy': [], 'validation_accuracy': [], 'train_loss': [], 'validation_loss': []}
+        self.train_losses = {'zero': [], 'normal': [], 'glorot': []}
+        self.valid_losses = {'zero': [], 'normal': [], 'glorot': []}
+
 
         if data is None:
             # for testing, do NOT remove or modify
@@ -174,6 +179,8 @@ class NN(object):
         return loss, accuracy, predictions
 
     def train_loop(self, n_epochs):
+        array_validation_loss = []
+        array_train_loss = []
         X_train, y_train = self.train
         y_onehot = y_train
         dims = [X_train.shape[1], y_onehot.shape[1]]
@@ -181,7 +188,9 @@ class NN(object):
 
         n_batches = int(np.ceil(X_train.shape[0] / self.batch_size))
 
+        print('Init method', self.init_method)
         for epoch in range(n_epochs):
+            print('Epoch', epoch)
             for batch in range(n_batches):
                 minibatchX = X_train[self.batch_size * batch:self.batch_size * (batch + 1), :]
                 minibatchY = y_onehot[self.batch_size * batch:self.batch_size * (batch + 1), :]
@@ -198,6 +207,8 @@ class NN(object):
             self.train_logs['validation_accuracy'].append(valid_accuracy)
             self.train_logs['train_loss'].append(train_loss)
             self.train_logs['validation_loss'].append(valid_loss)
+            self.train_losses[self.init_method].append(train_loss)
+            self.valid_losses[self.init_method].append(valid_loss)
 
         return self.train_logs
 
@@ -205,3 +216,70 @@ class NN(object):
         X_test, y_test = self.test
         test_loss, test_accuracy, _ = self.compute_loss_and_accuracy(X_test, y_test)
         return test_loss, test_accuracy
+
+mnist = load_mnist()
+epochs = 10
+hidden_dims = [(784,100)]
+# hidden_dims = [(500,400), (784,256), (784,480)]
+lr = [0.1]
+# lr = [7e-4, 7e-2]
+activation_str = ['relu']
+# activation_str = ['relu', 'sigmoid', 'tanh']
+batch_size = [32]
+# batch_size = [32, 64]
+
+for (i, hidden) in enumerate(hidden_dims):
+    for (j, rate) in enumerate(lr):
+        for (k, activation) in enumerate(activation_str):
+            for (l, batch) in enumerate(batch_size):
+                model = NN(data=mnist, hidden_dims=hidden, lr=rate, activation=activation, batch_size=batch)
+                start = time.process_time()
+                train_logs = model.train_loop(epochs)
+                end = time.process_time()
+                print('Training for ', epochs, 'epochs took ', end-start, ' seconds')
+                print('hidden', hidden,'rate', rate, 'activation', activation, 'batch_size', batch)
+                print('Train accuracy mean', np.mean(model.train_logs['train_accuracy']))
+                print(model.train_logs['train_accuracy'])
+                print('Validation accuracy mean', np.mean(model.train_logs['validation_accuracy']))
+                print(model.train_logs['validation_accuracy'])
+
+
+# model.init_method = 'zero'
+# epochs = 1
+# x = np.arange(1, epochs+1)
+# print('Train losses', model.init_method)
+# print(model.train_losses[model.init_method])
+# print('Valid losses', model.init_method)
+# print(model.valid_losses[model.init_method])
+# plt.figure()
+# plt.title('Loss for ' + model.init_method + ' initialization method')
+# plt.xlabel('Epoch')
+# plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+# plt.ylabel('Loss')
+# plt.plot(x, model.train_losses[model.init_method], label='Training')
+# plt.plot(x, model.valid_losses[model.init_method], label='Validation')
+# plt.legend()
+# plt.show()
+# init_methods = ['zero', 'normal', 'glorot']
+# epochs = 1
+# x = np.arange(1, epochs+1)
+# for i in range(0, len(init_methods)):
+#     model.init_method = init_methods[i]
+#     model.train_loop(epochs)
+#     print('Train losses', model.init_method)
+#     print(model.train_losses[model.init_method])
+#     print('Valid losses', model.init_method)
+#     print(model.valid_losses[model.init_method])
+    # plt.figure(i)
+    # plt.title('Training loss for ' + model.init_method + ' initialization methods')
+    # plt.xlabel('Epoch')
+    # plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+    # plt.ylabel('Loss')
+    # plt.plot(x, model.train_losses[model.init_method], label='Training')
+    # plt.plot(x, model.valid_losses[model.init_method], label='Validation')
+    # plt.legend()
+    # plt.show()
+
+
+
+
